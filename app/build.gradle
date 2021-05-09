@@ -4,7 +4,12 @@ plugins {
 
     id 'kotlin-android-extensions'
 
-    // Add secrets-gradle-plugin here
+    // Add secrets-gradle-plugin here.
+    // Next, to expose your API so it can be used throughout your app,
+    // include the Secrets Gradle Plugin for Android plugin in your app's build.
+    // gradle file located in the app/ directory and add the following line within
+    // the plugins block:
+    id 'com.google.secrets_gradle_plugin' version '0.5'
 }
 
 android {
