@@ -6,6 +6,8 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.Circle
+import com.google.android.gms.maps.model.CircleOptions
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.maps.android.clustering.ClusterManager
 import com.vane.android.addmaptoandroidapp.place.Place
@@ -53,11 +55,33 @@ class MainActivity : AppCompatActivity() {
         clusterManager.addItems(places)
         clusterManager.cluster()
 
+        // Show polygon
+        clusterManager.setOnClusterItemClickListener { item ->
+            addCircle(googleMap, item)
+            return@setOnClusterItemClickListener false
+        }
+
         // Set ClusterManager as the OnCameraIdleListener so that it
         // can re-cluster when zooming in and out.
         googleMap.setOnCameraIdleListener {
             clusterManager.onCameraIdle()
         }
+    }
+
+    private var circle: Circle? = null
+
+    /**
+     * Adds a [Circle] around the provided [item]
+     */
+    private fun addCircle(googleMap: GoogleMap, item: Place) {
+        circle?.remove()
+        circle = googleMap.addCircle(
+            CircleOptions()
+                .center(item.latLng)
+                .radius(1000.0)
+                .fillColor(ContextCompat.getColor(this, R.color.colorPrimaryTranslucent))
+                .strokeColor(ContextCompat.getColor(this, R.color.colorPrimary))
+        )
     }
 
     private val bicycleIcon: BitmapDescriptor by lazy {
