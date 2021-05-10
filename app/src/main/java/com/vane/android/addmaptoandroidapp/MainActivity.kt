@@ -7,7 +7,9 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.maps.android.clustering.ClusterManager
 import com.vane.android.addmaptoandroidapp.place.Place
+import com.vane.android.addmaptoandroidapp.place.PlaceRenderer
 import com.vane.android.addmaptoandroidapp.place.PlacesReader
 
 class MainActivity : AppCompatActivity() {
@@ -27,7 +29,34 @@ class MainActivity : AppCompatActivity() {
         mapFragment?.getMapAsync { googleMap ->
             addMarkers(googleMap)
             // Set custom info window adapter
-            googleMap.setInfoWindowAdapter(MarkerInfoWindowAdapter(this))
+            // googleMap.setInfoWindowAdapter(MarkerInfoWindowAdapter(this))
+        }
+    }
+
+    /**
+     * Adds markers to the map with clustering support.
+     */
+    private fun addClucteredMarkers(googleMap: GoogleMap) {
+        // Create the ClusterManager class and set the custom renderer.
+        val clusterManager = ClusterManager<Place>(this, googleMap)
+        clusterManager.renderer =
+            PlaceRenderer(
+                this,
+                googleMap,
+                clusterManager
+            )
+
+        // Set custom info window adapter
+        clusterManager.markerCollection.setInfoWindowAdapter(MarkerInfoWindowAdapter(this))
+
+        // Add the places to the ClusterManager
+        clusterManager.addItems(places)
+        clusterManager.cluster()
+
+        // Set ClusterManager as the OnCameraIdleListener so that it
+        // can re-cluster when zooming in and out.
+        googleMap.setOnCameraIdleListener {
+            clusterManager.onCameraIdle()
         }
     }
 
