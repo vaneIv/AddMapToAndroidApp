@@ -3,12 +3,10 @@ package com.vane.android.addmaptoandroidapp
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.core.content.ContextCompat
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.BitmapDescriptor
-import com.google.android.gms.maps.model.Circle
-import com.google.android.gms.maps.model.CircleOptions
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.*
 import com.google.maps.android.clustering.ClusterManager
 import com.vane.android.addmaptoandroidapp.place.Place
 import com.vane.android.addmaptoandroidapp.place.PlaceRenderer
@@ -29,7 +27,16 @@ class MainActivity : AppCompatActivity() {
             R.id.map_fragment
         ) as? SupportMapFragment
         mapFragment?.getMapAsync { googleMap ->
-            addMarkers(googleMap)
+            // Ensure all places are visible on the map
+            googleMap.setOnMapLoadedCallback {
+                val bounds = LatLngBounds.builder()
+                places.forEach { bounds.include(it.latLng) }
+                googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 20))
+            }
+
+            // addMarkers(googleMap)
+            addClusteredMarkers(googleMap)
+
             // Set custom info window adapter
             // googleMap.setInfoWindowAdapter(MarkerInfoWindowAdapter(this))
         }
@@ -38,7 +45,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * Adds markers to the map with clustering support.
      */
-    private fun addClucteredMarkers(googleMap: GoogleMap) {
+    private fun addClusteredMarkers(googleMap: GoogleMap) {
         // Create the ClusterManager class and set the custom renderer.
         val clusterManager = ClusterManager<Place>(this, googleMap)
         clusterManager.renderer =
@@ -61,9 +68,19 @@ class MainActivity : AppCompatActivity() {
             return@setOnClusterItemClickListener false
         }
 
-        // Set ClusterManager as the OnCameraIdleListener so that it
-        // can re-cluster when zooming in and out.
+        // When the camera starts moving, change the alpha value of the marker to translucent
+        googleMap.setOnCameraMoveStartedListener {
+            clusterManager.markerCollection.markers.forEach { it.alpha = 0.3f }
+            clusterManager.clusterMarkerCollection.markers.forEach { it.alpha = 0.3f }
+        }
+
         googleMap.setOnCameraIdleListener {
+            // When the camera stops moving, change the alpha value back to opaque
+            clusterManager.markerCollection.markers.forEach { it.alpha = 1.0f }
+            clusterManager.clusterMarkerCollection.markers.forEach { it.alpha = 1.0f }
+
+            // Call clusterManager.onCameraIdle() when the camera stops moving so that re-clustering
+            // can be performed when the camera stops moving
             clusterManager.onCameraIdle()
         }
     }
