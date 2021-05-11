@@ -3,11 +3,14 @@ package com.vane.android.addmaptoandroidapp
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.maps.android.clustering.ClusterManager
+import com.google.maps.android.ktx.awaitMap
+import com.google.maps.android.ktx.awaitMapLoad
 import com.vane.android.addmaptoandroidapp.place.Place
 import com.vane.android.addmaptoandroidapp.place.PlaceRenderer
 import com.vane.android.addmaptoandroidapp.place.PlacesReader
@@ -25,20 +28,20 @@ class MainActivity : AppCompatActivity() {
         // Reference to GoogleMap
         val mapFragment = supportFragmentManager.findFragmentById(
             R.id.map_fragment
-        ) as? SupportMapFragment
-        mapFragment?.getMapAsync { googleMap ->
-            // Ensure all places are visible on the map
-            googleMap.setOnMapLoadedCallback {
-                val bounds = LatLngBounds.builder()
-                places.forEach { bounds.include(it.latLng) }
-                googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 20))
-            }
+        ) as SupportMapFragment
+        lifecycleScope.launchWhenCreated {
+            // Get map
+            val googleMap = mapFragment.awaitMap()
 
-            // addMarkers(googleMap)
             addClusteredMarkers(googleMap)
 
-            // Set custom info window adapter
-            // googleMap.setInfoWindowAdapter(MarkerInfoWindowAdapter(this))
+            // Wait for map to finish loading
+            googleMap.awaitMapLoad()
+
+            // Ensure all places are visible in the map
+            val bounds = LatLngBounds.builder()
+            places.forEach { bounds.include(it.latLng) }
+            googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 20))
         }
     }
 
@@ -118,5 +121,9 @@ class MainActivity : AppCompatActivity() {
                     .icon(bicycleIcon)
             )
         }
+    }
+
+    companion object {
+        val TAG = MainActivity::class.java.simpleName
     }
 }
